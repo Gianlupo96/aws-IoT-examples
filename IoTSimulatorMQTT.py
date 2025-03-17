@@ -16,7 +16,7 @@ def read_payload_from_file(filename):
     with open(filename, "r") as file:
         return json.load(file)
 
-payload = read_payload_from_file("payload.json")
+payload = read_payload_from_file("FibTelemetry.json")
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -29,7 +29,7 @@ def on_disconnect(client, userdata, rc):
     print("Disconnesso dal broker AWS IoT")
 
 
-client = mqtt.Client()
+client = mqtt.Client(client_id="X_Thing")
 client.tls_set(
     ca_certs=ROOT_CA_PATH,
     certfile=CERTIFICATE_PATH,
@@ -37,17 +37,19 @@ client.tls_set(
     tls_version=ssl.PROTOCOL_TLSv1_2
 )
 client.on_connect = on_connect
-client.on_disconnect = on_disconnect
+#client.on_disconnect = on_disconnect
 
 print("Tentativo di connessione...")
 client.connect(AWS_IOT_ENDPOINT, PORT, keepalive=60)
 client.loop_start()
+time.sleep(2)
 
 try:
     while True:
         json_payload = json.dumps(payload)
         client.publish(TOPIC, json_payload)
-        print(f"Messaggio inviato: {json_payload}")
+        print("Messaggio inviato")
+        #print(f"Messaggio inviato: {json_payload}")
         time.sleep(60)  
 except KeyboardInterrupt:
     print("Interruzione manuale, chiusura connessione...")
