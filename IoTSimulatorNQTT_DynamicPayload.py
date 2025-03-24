@@ -4,17 +4,35 @@ import time
 import json
 import random
 
-AWS_IOT_ENDPOINT = "a10z8hoeefqtlg-ats.iot.eu-central-1.amazonaws.com"
+AWS_IOT_ENDPOINT = "xxxx"
 PORT = 8883
-TOPIC = "Fibercop/gatewayTest/datiTest/telemetria"
-CERTIFICATE_PATH = "simFib-certificate.pem.crt"
-PRIVATE_KEY_PATH = "simFib-private.pem.key"
+TOPIC = "xx/xx/xx"
+CERTIFICATE_PATH = "certificate.pem.crt"
+PRIVATE_KEY_PATH = "private.pem.key"
 ROOT_CA_PATH = "AmazonRootCA1.pem"
 
 def read_payload_from_file(filename):
     """Legge il payload dal file JSON."""
     with open(filename, "r") as file:
         return json.load(file)
+
+def get_current_timestamp():
+    return int(time.time() * 1000) 
+
+def update_telemetry_values(payload):
+    for measure in payload["data"].get("tags", []):  
+        measure["timestamp"] = str(get_current_timestamp())
+        measure_name = measure.get("measureName")
+        if measure_name == "Voltage":
+            measure["value"] = str(round(random.uniform(48, 55), 2))  
+        elif measure_name == "Current":
+            measure["value"] = str(round(random.uniform(20, 80), 2))  
+        elif measure_name == "Power":
+            measure["value"] = str(round(random.uniform(20, 80), 2)) 
+        elif "Energy" in measure_name:  
+            measure["value"] = str(round(random.uniform(20, 80), 2)) 
+    payload["timestamp"] = str(get_current_timestamp())
+    return payload
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -51,7 +69,8 @@ time.sleep(2)
 try:
     while True:
         payload = read_payload_from_file("FibTelemetry.json")  
-        json_payload = json.dumps(payload)
+        updated_payload = update_telemetry_values(payload) 
+        json_payload = json.dumps(updated_payload)
         print(json_payload)
         result = client.publish(TOPIC, json_payload, qos=1)  
         if result.rc == mqtt.MQTT_ERR_SUCCESS:
@@ -64,4 +83,3 @@ except KeyboardInterrupt:
     print("Interruzione manuale, chiusura connessione...")
     client.loop_stop()
     client.disconnect()
- 
